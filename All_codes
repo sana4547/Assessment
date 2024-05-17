@@ -1,0 +1,148 @@
+mkdir crud-api-node
+cd crud-api-node
+npm init -y
+npm install express sqlite3 body-parser                         // Initialize the
+
+-----------------------------------------Javascript -------------------------------------------
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const sqlite3 = require('sqlite3').verbose();
+
+const app = express();
+const port = 3000;
+const db = new sqlite3.Database(':memory:');
+
+app.use(bodyParser.json());
+
+db.serialize(() => {
+  db.run("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,image IMG,  summary TEXT)");
+});
+
+// Create
+app.post('/users', (req, res) => {
+  const { name, email } = req.body;
+  db.run('INSERT INTO users (name, image, summary) VALUES (?, ?, ?)', [name, image, sumary], function(err) {
+    if (err) return res.status(500).json({error: err.message});
+    res.json({id: this.lastID});
+  });
+});
+
+// Read
+app.get('/users', (req, res) => {
+  db.all('SELECT * FROM users', [], (err, rows) => {
+    if (err) return res.status(500).json({error: err.message});
+    res.json(rows);
+  });
+});
+
+app.get('/users/:id', (req, res) => {
+  db.get('SELECT * FROM users WHERE id = ?', [req.params.id], (err, row) => {
+    if (err) return res.status(500).json({error: err.message});
+    res.json(row);
+  });
+});
+
+// Update
+app.put('/users/:id', (req, res) => {
+  const { name, email } = req.body;
+  db.run('UPDATE users SET name = ?, image = ?, summary = ? WHERE id = ?', [name, image, summary, req.params.id], function(err) {
+    if (err) return res.status(500).json({error: err.message});
+    res.json({changed: this.changes});
+  });
+});
+
+// Delete
+app.delete('/users/:id', (req, res) => {
+  db.run('DELETE FROM users WHERE id = ?', [req.params.id], function(err) {
+    if (err) return res.status(500).json({error: err.message});
+    res.json({deleted: this.changes});
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}/`);
+});
+
+------------------------ Javascript -------------------------------------------------
+
+--- To run the server ---------
+
+node server.js
+
+---- To run the server -----------
+
+
+----python intialize -------
+
+mkdir crud-api-python
+cd crud-api-python
+python3 -m venv venv
+source venv/bin/activate
+pip install flask flask_sqlalchemy
+
+----------------------------
+
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+db = SQLAlchemy(app)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+
+db.create_all()
+
+# Create
+@app.route('/users', methods=['POST'])
+def create_user():
+    data = request.get_json()
+    new_user = User(name=data['name'], image=data['email'], summary=data['summary'), 
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'id': new_user.id})
+
+# Read
+@app.route('/users', methods=['GET'])
+def get_users():
+    users = User.query.all()
+    return jsonify([{'id': user.id, 'name': user.name, 'image': user.image, 'summary':user.summary} for user in users])
+
+@app.route('/users/<int:id>', methods=['GET'])
+def get_user(id):
+    user = User.query.get_or_404(id)
+    return jsonify({'id': user.id, 'name': user.name, 'image': user.image, 'summary':user.summary})
+
+# Update
+@app.route('/users/<int:id>', methods=['PUT'])
+def update_user(id):
+    data = request.get_json()
+    user = User.query.get_or_404(id)
+    user.name = data['name']
+    user.image = data['image']
+    user.summary = data['summary']
+    db.session.commit()
+    return jsonify({'message': 'User updated successfully'})
+
+# Delete
+@app.route('/users/<int:id>', methods=['DELETE'])
+def delete_user(id):
+    user = User.query.get_or_404(id)
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'message': 'User deleted successfully'})
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+---- run the server ---
+
+python app.py
+
+-------------------
